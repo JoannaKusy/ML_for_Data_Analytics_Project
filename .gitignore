@@ -1,3 +1,15 @@
+# Data (often too large for GitHub)
+data/raw/
+data/processed/
+
+# Model artifacts (can be large)
+*.pkl
+*.h5
+
+# OS files
+.DS_Store
+Thumbs.db
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -76,7 +88,7 @@ docs/_build/
 target/
 
 # Jupyter Notebook
-.ipynb_checkpoints
+.ipynb_checkpoints/
 
 # IPython
 profile_default/
