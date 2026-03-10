@@ -4,53 +4,48 @@ import pandas as pd
 
 def loader():
     individual_household_electric_power_consumption = fetch_ucirepo(id=235)
-
     X = individual_household_electric_power_consumption.data.features
-    Y = X['Global_active_power']
-    X = X.drop(columns=['Global_active_power'])
-
     X['datetime'] = pd.to_datetime(X['Date'] + ' ' + X['Time'], dayfirst=True) #dayfirst= True because the formet of the date is DD/MM/YYYY
     X.set_index('datetime', inplace=True)
-    Y.index = X.index
-
-    X.drop(columns=['Date', 'Time'], inplace=True)  #delette because the information is in the index
-
-    print(X)
-    print(Y)
-
-    print(X.columns)  # noms des colonnes
-    print(X.head())  # premières lignes
-    print(X.info())  # type et non-null
-    print(X.describe())  # stats numériques
-    return X,Y
+    X.drop(['Date', 'Time'], axis=1, inplace=True)
+    return X
 
 def data_loader():
-    X,Y = loader()
-    return X,Y
+    X = loader()
 
-def get_hourly_data(X,Y):
-    X_hourly = X.resample('H').mean()
-    Y_hourly = Y.resample('H').sum()
-    return X_hourly,Y_hourly
+    X.replace('?', pd.NA, inplace=True)    #missing value is replace by "?" right now i changed it by Nan but need to use the function interpolate later
+    X=X.dropna()
+    X = X.astype(float)
+    return X
 
-def get_daily_data(X,Y):
-    X_daily = X.resample('D').mean()
-    Y_daily = Y.resample('D').sum()
-    return X_daily,Y_daily
+def get_hourly_data(X):
+    X_hourly = X.resample('h').sum()
+    return X_hourly
 
-def get_monthly_data(X,Y):
-    X_monthly = X.resample('M').mean()
-    Y_monthly = Y.resample('M').sum()
-    return X_monthly,Y_monthly
+def get_daily_data(X):
+    X_daily = X.resample('D').sum()
+    return X_daily
+
+def get_monthly_data(X):
+    X_monthly = X.resample('ME').sum()
+    return X_monthly
 
 
-def get_yearly_data(X,Y):
-    X_yearly = X.resample('Y').mean()
-    Y_yearly = Y.resample('Y').sum()
-    return X_yearly,Y_yearly
+def get_yearly_data(X):
+    X_yearly = X.resample('YE').sum()
+    return X_yearly
 
-def interpolation(X,Y):
+def interpolation(X):
     #pour extrapoler,
     #[u(t+1)-u(t-1)]/2
     return
-
+#data = data_loader()
+#data_hourly = get_hourly_data(data)
+#data_daily = get_daily_data(data)
+#data_monthly = get_monthly_data(data)
+#data_yearly = get_yearly_data(data)
+#print(data)
+#print(data_hourly)
+#print(data_daily)
+#print(data_monthly)
+#print(data_yearly)
