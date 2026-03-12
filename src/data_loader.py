@@ -17,29 +17,30 @@ def data_loader():
     X.replace('?', np.nan, inplace=True)    #missing value is replace by "?" right now i changed it by Nan but need to use the function interpolate later
     X=X.astype(float)
 
-
-    X=interpolation(X)
-    nb_rows_missing = X.isna().any(axis=1).sum()
+    nb_rows_missing=X.isna().any(axis=1).sum()
     print(nb_rows_missing)
 
+    mask=X.isna().any(axis=1)  # True if the row contains at least one NaN
+    groups=(mask!=mask.shift()).cumsum()  # identify consecutive sequences
+    nan_streaks=mask.groupby(groups).sum()  # count consecutive NaNs
 
-    mask=X.isna().any(axis=1)  # True si la ligne a au moins un NaN
-    groups=(mask!=mask.shift()).cumsum()  # numérote les séquences
-    nan_streaks=mask.groupby(groups).sum()  # compte les NaN consécutifs
-
-    # On ne garde que les séquences qui contiennent des NaN
+    # Keep only sequences that contain NaN values
     nan_streaks=nan_streaks[nan_streaks>0]
 
-    # On compte combien de fois chaque longueur apparaît
+    # Count how many times each sequence length appears
     streak_counts=nan_streaks.value_counts().sort_index()
 
-    # Afficher sous forme de tableau
+    # Display results as a table
     df_streaks=pd.DataFrame({
-        "Longueur de NaN consécutifs": streak_counts.index,
-        "Nombre de séquences": streak_counts.values
+        "Consecutive_NaN_length": streak_counts.index,
+        "Number_of_sequences": streak_counts.values
     })
 
     print(df_streaks)
+
+
+    X=interpolation(X)
+
 
 
 
@@ -68,6 +69,14 @@ def interpolation(X):
     #[u(t+1)-u(t-1)]/2
     n_max_linear=10
 
+    # lignes où TOUTES les colonnes sont NaN
+    nb_full_missing=X.isna().all(axis=1).sum()
+
+    # lignes où au moins une colonne est NaN
+    nb_partial_missing=X.isna().any(axis=1).sum()
+
+    print("lignes totalement manquantes :", nb_full_missing)
+    print("lignes avec au moins un NaN :", nb_partial_missing)
 
 
     n_missing_value=0
@@ -105,6 +114,9 @@ def interpolation(X):
 
 
     return X
+
+
+
 
 
 data = data_loader()
