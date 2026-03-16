@@ -9,6 +9,7 @@ def loader():
     X['datetime'] = pd.to_datetime(X['Date'] + ' ' + X['Time'], dayfirst=True) #dayfirst= True because the format of the date is DD/MM/YYYY not MM/DD/YYYY
     X.set_index('datetime', inplace=True)
     X.drop(['Date', 'Time'], axis=1, inplace=True)
+    print(X)
     return X
 
 def data_loader():
@@ -16,28 +17,6 @@ def data_loader():
 
     X.replace('?', np.nan, inplace=True)    #missing value is replace by "?" right now i changed it by Nan but need to use the function interpolate later
     X=X.astype(float)
-
-    nb_rows_missing=X.isna().any(axis=1).sum()
-    print(nb_rows_missing)
-
-    mask=X.isna().any(axis=1)  # True if the row contains at least one NaN
-    groups=(mask!=mask.shift()).cumsum()  # identify consecutive sequences
-    nan_streaks=mask.groupby(groups).sum()  # count consecutive NaNs
-
-    # Keep only sequences that contain NaN values
-    nan_streaks=nan_streaks[nan_streaks>0]
-
-    # Count how many times each sequence length appears
-    streak_counts=nan_streaks.value_counts().sort_index()
-
-    # Display results as a table
-    df_streaks=pd.DataFrame({
-        "Consecutive_NaN_length": streak_counts.index,
-        "Number_of_sequences": streak_counts.values
-    })
-
-    print(df_streaks)
-
 
     X=interpolation(X)
 
@@ -69,16 +48,6 @@ def interpolation(X):
     #[u(t+1)-u(t-1)]/2
     n_max_linear=10
 
-    # lignes où TOUTES les colonnes sont NaN
-    nb_full_missing=X.isna().all(axis=1).sum()
-
-    # lignes où au moins une colonne est NaN
-    nb_partial_missing=X.isna().any(axis=1).sum()
-
-    print("lignes totalement manquantes :", nb_full_missing)
-    print("lignes avec au moins un NaN :", nb_partial_missing)
-
-
     n_missing_value=0
     idx_missing_value=[]
 
@@ -94,17 +63,14 @@ def interpolation(X):
                     i_start=idx_missing_value[0]-1  # avant le NaN
                     i_end=idx_missing_value[-1]+1  # après le NaN (ou i)
 
-                    # valeurs connues
                     y0=X.iloc[i_start,j]
                     y1=X.iloc[i_end,j]
 
-                    # pente
+                    # ax+b
                     a=(y1-y0)/(i_end-i_start)
-
-                    # intercept
                     b=y0-a*i_start
 
-                    # interpolation pour chaque i manquant
+                    #interpolate for each i missing
                     for k in idx_missing_value:
                         X.iloc[k,j]=a*k+b
                 idx_missing_value.clear()
@@ -136,21 +102,21 @@ print(data_yearly)
 
 #ChatGPT to count how many followed missing value there is in the dataframe
 """
-    mask=X.isna().any(axis=1)  # True si la ligne a au moins un NaN
-    groups=(mask!=mask.shift()).cumsum()  # numérote les séquences
-    nan_streaks=mask.groupby(groups).sum()  # compte les NaN consécutifs
+mask=X.isna().any(axis=1)  # True si la ligne a au moins un NaN
+groups=(mask!=mask.shift()).cumsum()  # numérote les séquences
+nan_streaks=mask.groupby(groups).sum()  # compte les NaN consécutifs
 
-    # On ne garde que les séquences qui contiennent des NaN
-    nan_streaks=nan_streaks[nan_streaks>0]
+# On ne garde que les séquences qui contiennent des NaN
+nan_streaks=nan_streaks[nan_streaks>0]
 
-    # On compte combien de fois chaque longueur apparaît
-    streak_counts=nan_streaks.value_counts().sort_index()
+# On compte combien de fois chaque longueur apparaît
+streak_counts=nan_streaks.value_counts().sort_index()
 
-    # Afficher sous forme de tableau
-    df_streaks=pd.DataFrame({
-        "Longueur de NaN consécutifs": streak_counts.index,
-        "Nombre de séquences": streak_counts.values
-    })
+# Afficher sous forme de tableau
+df_streaks=pd.DataFrame({
+    "Longueur de NaN consécutifs": streak_counts.index,
+    "Nombre de séquences": streak_counts.values
+})
 
-    print(df_streaks)
+print(df_streaks)
     """
