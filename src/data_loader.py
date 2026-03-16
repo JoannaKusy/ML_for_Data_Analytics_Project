@@ -100,6 +100,7 @@ print(data_yearly)
 """
 
 
+
 #ChatGPT to count how many followed missing value there is in the dataframe
 """
 mask=X.isna().any(axis=1)  # True si la ligne a au moins un NaN
