@@ -5,3 +5,5 @@ seaborn==0.13.2
 statsmodels==0.14.6
 jupyter==1.1.1
 ipython==9.11.0
+holidays==0.93
+astral==3.2
