@@ -1,13 +1,36 @@
-import torch
+from network_variants import LSTMModel0
+from direct import run_experiment
 
 
-print(torch.cuda.is_available())
+CONFIG = {
+    "data": {
+        "train_path": "data/processed/residential4_energy_demand_daily_train.csv",
+        "test_path": "data/processed/residential4_energy_demand_daily_test.csv",
+        "lags": [1,2]
+    },
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print('Using device:', device)
+    "model": {
+        "network_arch": LSTMModel0,
+        "network_params": {
+            "hidden_size": 64,
+            "num_layers": 1,
+            "dropout": 0.01
+        }
+    },
 
-if device.type == 'cuda':
-    print(torch.cuda.get_device_name(0))
-    print('Memory Usage:')
-    print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')
-    print('Cached:   ', round(torch.cuda.memory_cached(0)/1024**3,1), 'GB')
+    "training": {
+        "epochs": 50,
+        "lr": 0.001,
+        "batch_size": 32
+    },
+
+    "wandb": {
+        "entity": "ml-for-data-analytics-project",
+        "project": "energy-forecasting",
+        "run_name": None #generated automatically if not provided, you can also change later on website
+    }
+}
+
+
+if __name__ == "__main__":
+    run_experiment(CONFIG)
