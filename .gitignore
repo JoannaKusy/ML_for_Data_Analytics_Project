@@ -220,3 +220,6 @@ __marimo__/
 
 heston.ipynb
 pres.txt
+
+#wandb
+wandb/
