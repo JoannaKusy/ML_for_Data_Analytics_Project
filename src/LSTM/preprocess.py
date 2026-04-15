@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 
@@ -52,6 +53,81 @@ def add_lagged_features(df, lags):
     return df_lagged
 
 
+def add_lagged_features_new(train_df, test_df, lags, resolution="daily"):
+    features = {
+        "daily": ['is_holiday_or_weekend', 'season'],
+        "hourly": ['daylight_flag', 'time_of_day', 'is_holiday_or_weekend', 'season']
+    }
+
+    cat_cols = features[resolution]
+
+    # combine train and test so lagged values for the start of test come from end of train
+    combined = pd.concat([train_df, test_df]).sort_index()
+
+    # create lagged features on the combined series for all non-categorical cols
+    for col in combined.columns.difference(cat_cols):
+        for lag in lags:
+            combined[f"{col}_lag_{lag}"] = combined[col].shift(lag)
+
+    # split back to train and test using original indices
+    train_lagged = combined.loc[train_df.index].copy()
+    test_lagged = combined.loc[test_df.index].copy()
+
+    # drop current-time features (keep categorical and target 'energy_demand')
+    keep_cols = list(cat_cols) + ['energy_demand']
+    drop_cols = [c for c in train_df.columns if c not in keep_cols]
+
+    train_lagged = train_lagged.drop(columns=drop_cols)
+    test_lagged = test_lagged.drop(columns=drop_cols)
+
+    # drop rows with NaNs in train (initial rows without full lag history)
+    train_lagged = train_lagged.dropna()
+
+    return train_lagged, test_lagged
+
+
+def create_sequences(train, test, k, resolution="daily"):
+    features = {
+        "daily": ['is_holiday_or_weekend_True', 'season_spring', 'season_summer', 'season_winter'],
+        "hourly": ['daylight_flag', 'time_of_day', 'is_holiday_or_weekend', 'season']
+    }
+
+    FUTURE_FEATURES = features[resolution]  # known at prediction time
+
+    ALL_FEATURES = [
+        'energy_demand', 'dishwasher', 'ev', 'freezer', 'grid_export',
+        'heat_pump', 'pv', 'washing_machine', 'temperature',
+        'radiation_direct_horizontal', 'radiation_diffuse_horizontal',
+    ] + FUTURE_FEATURES
+
+    TARGET = 'energy_demand'
+
+    combined = pd.concat([train, test]).sort_index()
+
+    X_past, X_future, y = [], [], []
+
+    for i in range(len(combined) - k):
+        past = combined.iloc[i:i+k][ALL_FEATURES].values
+        future = combined.iloc[i+k:i+k+1][FUTURE_FEATURES].values
+        target = combined.iloc[i+k][TARGET]
+
+        X_past.append(past)
+        X_future.append(future)
+        y.append(target)
+    
+    
+    split_idx = len(train) - k  # first index of test sequences
+    X_past_train = X_past[:split_idx]
+    X_future_train = X_future[:split_idx]
+    y_train = y[:split_idx]
+
+    X_past_test = X_past[split_idx:]
+    X_future_test = X_future[split_idx:]
+    y_test = y[split_idx:]
+
+    return np.array(X_past_train), np.array(X_future_train), np.array(y_train), np.array(X_past_test), np.array(X_future_test), np.array(y_test)
+
+
 def scale_data(train, test):
     scaler = MinMaxScaler()
 
@@ -59,3 +135,14 @@ def scale_data(train, test):
     test_scaled = scaler.transform(test)
 
     return train_scaled, test_scaled, scaler
+
+
+def scale_data_new(train, test):
+    scaler = MinMaxScaler()
+
+    columns = train.columns
+
+    train[columns] = scaler.fit_transform(train[columns])
+    test[columns] = scaler.transform(test[columns])
+
+    return train, test, scaler
