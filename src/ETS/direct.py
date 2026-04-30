@@ -1,6 +1,8 @@
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
+import wandb
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -38,6 +40,19 @@ def run_experiment(CONFIG):
 
     y_hourly = train_df_h["y"].asfreq("h")
 
+    run_name=CONFIG["wandb"]["run_name"] or generate_run_name(CONFIG)
+
+    # info prints
+    print("~~~~~~~~~~ Launching training ~~~~~~~~~~~~")
+    print(f"Run name: {run_name}")
+
+    wandb.login()
+    run=wandb.init(
+        entity=CONFIG["wandb"]["entity"],
+        project=CONFIG["wandb"]["project"],
+        name=run_name,
+        config=CONFIG
+    )
 
 
 
@@ -83,19 +98,6 @@ def run_experiment(CONFIG):
         ]
 
 
-    print(forecast)
-
-
-
-
-
-
-
-
-
-
-
-
     if CONFIG["forecast"]["resolution"]=="hourly":
         # HOURLY SEASONALITY
         h_decomp=seasonal_decompose(
@@ -108,5 +110,40 @@ def run_experiment(CONFIG):
 
 
 
+    y_true = test_df_d["y"].values
+    y_pred = forecast.values[:len(y_true)]
 
+    run.log({
+        "val/mse": mse(y_true, y_pred),
+        "val/rmse": rmse(y_true, y_pred),
+        "val/mae": mae(y_true, y_pred),
+    })
+
+
+    df_preds = pd.DataFrame({
+        "date": test_df_d.index,
+        "actual_kWh": y_true,
+        "predicted_kWh": y_pred,
+    })
+
+    df_preds["error"] = df_preds["actual_kWh"] - df_preds["predicted_kWh"]
+
+    run.log({
+        "predictions": wandb.Table(dataframe=df_preds)
+    })
+
+    run.log({
+        "actual_vs_predicted": wandb.plot.line_series(
+            xs=list(range(len(df_preds))),
+            ys=[
+                df_preds["actual_kWh"].tolist(),
+                df_preds["predicted_kWh"].tolist()
+            ],
+            keys=["actual", "predicted"],
+            title="Actual vs Predicted (ETS)",
+            xname="time_step"
+        )
+    })
+
+    run.finish()
 

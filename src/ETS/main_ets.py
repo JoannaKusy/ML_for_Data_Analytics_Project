@@ -19,6 +19,11 @@ CONFIG = {
             "resolution": "daily",
             "horizon": 65
     }
+    "wandb": {
+            "entity": "ml-for-data-analytics-project",
+            "project": "energy-forecasting",
+            "run_name": None #generated automatically if not provided, you can also change later on website
+        }
 }
 
 
