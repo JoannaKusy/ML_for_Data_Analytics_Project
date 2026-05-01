@@ -10,7 +10,10 @@ import pandas as pd
 from metrics import *
 from preprocess import load_data, encode_features
 
-
+#run name for wandb
+def generate_run_name(config):
+    name = "ETS"
+    return f"{name}_{config['model']}"
 
 def run_experiment(CONFIG):
     train_df_d = load_data(CONFIG["data"]["train_path_daily"])

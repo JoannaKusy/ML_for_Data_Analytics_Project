@@ -18,7 +18,7 @@ CONFIG = {
     "forecast":{
             "resolution": "daily",
             "horizon": 65
-    }
+    },
     "wandb": {
             "entity": "ml-for-data-analytics-project",
             "project": "energy-forecasting",
