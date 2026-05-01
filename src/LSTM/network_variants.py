@@ -61,19 +61,3 @@ class keras_LSTM_encoder_decoder:
     def get_model(self):
         return self.model
 
-    def __call__(self, inputs):
-        return self.model(inputs)
-    
-    def compile(self, *args, **kwargs):
-        self.model.compile(*args, **kwargs)
-
-    def fit(self, *args, **kwargs):
-        return self.model.fit(*args, **kwargs)
-    
-    def predict(self, *args, **kwargs):
-        return self.model.predict(*args, **kwargs)
-    
-    def count_params(self):
-        return self.model.count_params()
-    
-

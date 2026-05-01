@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 import wandb
 import pandas as pd
-from src.metrics import *
+from metrics import *
 from preprocess import load_data, encode_features, scale_data, add_lagged_features
 
 #run name for wandb

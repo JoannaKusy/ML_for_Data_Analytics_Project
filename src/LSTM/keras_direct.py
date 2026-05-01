@@ -37,7 +37,7 @@ def run_experiment(CONFIG):
         n_past_features=n_past_features,
         n_future_features=n_future_features,
         **CONFIG["model"]["network_params"]
-    )
+    ).get_model()
 
     model.compile(
         optimizer=Adam(learning_rate=CONFIG["training"]["lr"]),
