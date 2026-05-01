@@ -49,7 +49,7 @@ class keras_LSTM_encoder_decoder:
         decoder_output = decoder_lstm(decoder_inputs, initial_state=encoder_states) 
 
         # ----- Dense head -----
-        x = Dense(dense_units, activation='relu')(decoder_output) 
+        x = Dense(dense_units, activation='tanh')(decoder_output) 
         x = Dropout(dropout)(x)
         output = Dense(1)(x)
 

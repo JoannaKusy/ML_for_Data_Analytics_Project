@@ -86,7 +86,7 @@ def add_lagged_features_new(train_df, test_df, lags, resolution="daily"):
     return train_lagged, test_lagged
 
 
-def create_sequences(train, test, k, resolution="daily"):
+def create_sequences(train, val, test, k, resolution="daily"):
     features = {
         "daily": ['is_holiday_or_weekend_True', 'season_spring', 'season_summer', 'season_winter'],
         "hourly": ['daylight_flag', 'time_of_day', 'is_holiday_or_weekend', 'season']
@@ -102,7 +102,7 @@ def create_sequences(train, test, k, resolution="daily"):
 
     TARGET = 'energy_demand'
 
-    combined = pd.concat([train, test]).sort_index()
+    combined = pd.concat([train, val, test]).sort_index()
 
     X_past, X_future, y = [], [], []
 
@@ -116,16 +116,26 @@ def create_sequences(train, test, k, resolution="daily"):
         y.append(target)
     
     
-    split_idx = len(train) - k  # first index of test sequences
-    X_past_train = X_past[:split_idx]
-    X_future_train = X_future[:split_idx]
-    y_train = y[:split_idx]
+    train_end = len(train) - k
+    val_end = train_end + len(val)
 
-    X_past_test = X_past[split_idx:]
-    X_future_test = X_future[split_idx:]
-    y_test = y[split_idx:]
+    X_past_train = X_past[:train_end]
+    X_future_train = X_future[:train_end]
+    y_train = y[:train_end]
 
-    return np.array(X_past_train), np.array(X_future_train), np.array(y_train), np.array(X_past_test), np.array(X_future_test), np.array(y_test)
+    X_past_val = X_past[train_end:val_end]
+    X_future_val = X_future[train_end:val_end]
+    y_val = y[train_end:val_end]
+
+    X_past_test = X_past[val_end:]
+    X_future_test = X_future[val_end:]
+    y_test = y[val_end:]
+
+    return (
+        np.array(X_past_train), np.array(X_future_train), np.array(y_train),
+        np.array(X_past_val), np.array(X_future_val), np.array(y_val),
+        np.array(X_past_test), np.array(X_future_test), np.array(y_test)
+    )
 
 
 def scale_data(train, test):
@@ -137,12 +147,21 @@ def scale_data(train, test):
     return train_scaled, test_scaled, scaler
 
 
-def scale_data_new(train, test):
+def scale_data_new(train, val, test):
     scaler = MinMaxScaler()
 
     columns = train.columns
 
     train[columns] = scaler.fit_transform(train[columns])
+    val[columns] = scaler.transform(val[columns])
     test[columns] = scaler.transform(test[columns])
 
-    return train, test, scaler
+    return train, val, test, scaler
+
+
+def split_train(train_df, val_size=30):
+    train_df = train_df.sort_index()
+    val_df = train_df.iloc[-val_size:].copy()
+    train_df = train_df.iloc[:-val_size].copy()
+
+    return train_df, val_df
