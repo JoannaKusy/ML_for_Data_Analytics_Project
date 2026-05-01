@@ -5,25 +5,54 @@ from keras.layers import LSTM, Dense, Input, Dropout
 from keras.regularizers import l1_l2
 
 
-
 class LSTMModel0(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, dropout):
+    def __init__(self, input_size, hidden_size, num_layers, dropout, n_future_features=None, n_past_features=None):
         super().__init__()
-
+        # input_size to match n_past_features from create_sequences
         self.lstm = nn.LSTM(
-            input_size=input_size,
+            input_size=n_past_features, 
             hidden_size=hidden_size,
             num_layers=num_layers,
             dropout=dropout if num_layers > 1 else 0,
             batch_first=True
         )
-
         self.fc = nn.Linear(hidden_size, 1)
 
-    def forward(self, x):
-        out, _ = self.lstm(x)
-        out = out[:, -1, :]
+    def forward(self, x_past, x_future=None): 
+        #added x_future=None to maintain compatibility with direct.py
+        out, _ = self.lstm(x_past)
+        out = out[:, -1, :] #the last hidden state
         return self.fc(out)
+    
+class LSTMAttentionModel(nn.Module):
+    def __init__(self, input_size, n_future_features, hidden_size, num_layers, dropout, n_past_features=None):
+        super().__init__()
+        self.lstm = nn.LSTM(
+            input_size=n_past_features, 
+            hidden_size=hidden_size, 
+            num_layers=num_layers, 
+            batch_first=True, 
+            dropout=dropout if num_layers > 1 else 0
+        )
+        
+        self.attention = nn.Linear(hidden_size, 1)
+        self.fc = nn.Linear(hidden_size + n_future_features, 1)
+
+    def forward(self, x_past, x_future, return_attn=False):
+        # x_past shape: (batch, sequence_length, n_past_features)
+        lstm_out, _ = self.lstm(x_past) 
+        
+        attn_scores = self.attention(lstm_out) 
+        attn_weights = torch.softmax(attn_scores, dim=1) 
+        
+        context = torch.sum(attn_weights * lstm_out, dim=1) 
+    
+        combined = torch.cat((context, x_future.view(x_future.size(0), -1)), dim=1)
+        out = self.fc(combined)
+        
+        if return_attn:
+            return out, attn_weights
+        return out
 
 
 class keras_LSTM_encoder_decoder:
