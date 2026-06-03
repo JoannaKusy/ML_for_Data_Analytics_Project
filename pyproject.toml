@@ -1,0 +1,11 @@
+[tool.black]
+# force Black to use Python 3.12 rules everywhere (local and CI)
+target-version = ['py312']
+# Include Jupyter notebooks
+include = '\.pyi?$|\.ipynb$'
+
+[tool.ruff]
+# Force Ruff to assume Python 3.12
+target-version = "py312"
+# Allow Ruff to check notebooks
+extend-include = ["*.ipynb"]
