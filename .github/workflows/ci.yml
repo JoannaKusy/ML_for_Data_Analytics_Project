@@ -31,3 +31,11 @@ jobs:
       - name: Run Unit Tests
         run: |
           pytest tests/ -v
+
+      - name: Check Formatting and Linting
+        run: |
+          # code formatted correctly
+          black src/ tests/ notebooks/ --check
+          
+          # check for logical bugs and bad practices 
+          ruff check src/ tests/ notebooks/

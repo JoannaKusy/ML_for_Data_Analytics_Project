@@ -63,7 +63,9 @@ def _select_arima_order(train_y, search_space, trend):
     for order in product(search_space["p"], [search_space["d"]], search_space["q"]):
         try:
             fitted = ARIMA(train_y, order=order, trend=trend).fit()
-            scores.append({"order": order, "aic": float(fitted.aic), "bic": float(fitted.bic)})
+            scores.append(
+                {"order": order, "aic": float(fitted.aic), "bic": float(fitted.bic)}
+            )
             if fitted.aic < best_aic:
                 best_aic = float(fitted.aic)
                 best_order = order
@@ -73,11 +75,23 @@ def _select_arima_order(train_y, search_space, trend):
     if best_order is None:
         raise ValueError("No valid ARIMA order found.")
 
-    scores_df = pd.DataFrame(scores).sort_values("aic") if scores else pd.DataFrame(columns=["order", "aic", "bic"])
+    scores_df = (
+        pd.DataFrame(scores).sort_values("aic")
+        if scores
+        else pd.DataFrame(columns=["order", "aic", "bic"])
+    )
     return best_order, scores_df
 
 
-def _select_sarima_order(train_y, exog, search_space, seasonal_orders, trend, enforce_stationarity, enforce_invertibility):
+def _select_sarima_order(
+    train_y,
+    exog,
+    search_space,
+    seasonal_orders,
+    trend,
+    enforce_stationarity,
+    enforce_invertibility,
+):
     best_order = None
     best_seasonal_order = None
     best_aic = np.inf
@@ -95,7 +109,14 @@ def _select_sarima_order(train_y, exog, search_space, seasonal_orders, trend, en
                     enforce_stationarity=enforce_stationarity,
                     enforce_invertibility=enforce_invertibility,
                 ).fit(disp=False)
-                scores.append({"order": order, "seasonal_order": seasonal_order, "aic": float(fitted.aic), "bic": float(fitted.bic)})
+                scores.append(
+                    {
+                        "order": order,
+                        "seasonal_order": seasonal_order,
+                        "aic": float(fitted.aic),
+                        "bic": float(fitted.bic),
+                    }
+                )
                 if fitted.aic < best_aic:
                     best_aic = float(fitted.aic)
                     best_order = order
@@ -106,7 +127,11 @@ def _select_sarima_order(train_y, exog, search_space, seasonal_orders, trend, en
     if best_order is None:
         raise ValueError("No valid SARIMA/SARIMAX configuration found.")
 
-    scores_df = pd.DataFrame(scores).sort_values("aic") if scores else pd.DataFrame(columns=["order", "seasonal_order", "aic", "bic"])
+    scores_df = (
+        pd.DataFrame(scores).sort_values("aic")
+        if scores
+        else pd.DataFrame(columns=["order", "seasonal_order", "aic", "bic"])
+    )
     return best_order, best_seasonal_order, scores_df
 
 
@@ -119,7 +144,16 @@ def _forecast_arima_onestep(train_y, order, trend):
     return pred, ci.iloc[0], ci.iloc[1], fitted
 
 
-def _forecast_sarimax_onestep(train_y, exog_train, exog_test_row, order, seasonal_order, trend, enforce_stationarity, enforce_invertibility):
+def _forecast_sarimax_onestep(
+    train_y,
+    exog_train,
+    exog_test_row,
+    order,
+    seasonal_order,
+    trend,
+    enforce_stationarity,
+    enforce_invertibility,
+):
     """Fit SARIMAX and predict 1 step ahead with confidence interval."""
     fitted = SARIMAX(
         endog=train_y,
@@ -133,7 +167,9 @@ def _forecast_sarimax_onestep(train_y, exog_train, exog_test_row, order, seasona
     if exog_test_row is None:
         forecast = fitted.get_forecast(steps=1)
     else:
-        forecast = fitted.get_forecast(steps=1, exog=exog_test_row.values.reshape(1, -1))
+        forecast = fitted.get_forecast(
+            steps=1, exog=exog_test_row.values.reshape(1, -1)
+        )
     pred = forecast.predicted_mean.iloc[0]
     ci = forecast.conf_int(alpha=0.05).iloc[0]
     return pred, ci.iloc[0], ci.iloc[1], fitted
@@ -147,7 +183,9 @@ def _run_decompose_arima(train_df, test_df, config):
         model=config["model"].get("decompose_model", "additive"),
     )
 
-    search_space = config["model"].get("search_space", {"p": [0, 1, 2, 3], "q": [0, 1, 2, 3]})
+    search_space = config["model"].get(
+        "search_space", {"p": [0, 1, 2, 3], "q": [0, 1, 2, 3]}
+    )
     trend = config["model"].get("trend", "c")
     search_space["d"] = _choose_d(deseasonalized_train)
     trend = _resolve_trend(trend, search_space["d"], 0)
@@ -170,22 +208,38 @@ def _run_decompose_arima(train_df, test_df, config):
         upper_bounds.append(upper)
         # Append actual value for next iteration
         actual_val = test_df.iloc[i]["energy_demand"]
-        seasonal_adjustment = seasonal_cycle[(i % seasonal_period)] if seasonal_period > 0 else 0
-        _train_y = pd.concat([_train_y, pd.Series([actual_val - seasonal_adjustment])], ignore_index=True)
+        seasonal_adjustment = (
+            seasonal_cycle[(i % seasonal_period)] if seasonal_period > 0 else 0
+        )
+        _train_y = pd.concat(
+            [_train_y, pd.Series([actual_val - seasonal_adjustment])], ignore_index=True
+        )
 
     predictions = np.array(preds) + np.resize(seasonal_cycle, len(test_df))
     lower = np.array(lower_bounds) + np.resize(seasonal_cycle, len(test_df))
     upper = np.array(upper_bounds) + np.resize(seasonal_cycle, len(test_df))
 
-    return predictions, pd.DataFrame({"lower": lower, "upper": upper}, index=test_df.index), fitted, order
+    return (
+        predictions,
+        pd.DataFrame({"lower": lower, "upper": upper}, index=test_df.index),
+        fitted,
+        order,
+    )
 
 
 def _run_sarima(train_df, test_df, config):
-    search_space = config["model"].get("search_space", {"p": [0, 1, 2, 3], "q": [0, 1, 2, 3]})
+    search_space = config["model"].get(
+        "search_space", {"p": [0, 1, 2, 3], "q": [0, 1, 2, 3]}
+    )
     seasonal_period = config["model"].get("seasonal_period", 7)
     seasonal_orders_cfg = config["model"].get(
         "seasonal_orders",
-        [(0, 1, 0, seasonal_period), (1, 1, 0, seasonal_period), (0, 1, 1, seasonal_period), (1, 1, 1, seasonal_period)],
+        [
+            (0, 1, 0, seasonal_period),
+            (1, 1, 0, seasonal_period),
+            (0, 1, 1, seasonal_period),
+            (1, 1, 1, seasonal_period),
+        ],
     )
     trend = config["model"].get("trend", "c")
     enforce_stationarity = config["model"].get("enforce_stationarity", False)
@@ -218,7 +272,16 @@ def _run_sarima(train_df, test_df, config):
     fitted = None
 
     for i in range(len(test_df)):
-        pred, lower, upper, fitted = _forecast_sarimax_onestep(_train_y, None, None, order, seasonal_order, trend, enforce_stationarity, enforce_invertibility)
+        pred, lower, upper, fitted = _forecast_sarimax_onestep(
+            _train_y,
+            None,
+            None,
+            order,
+            seasonal_order,
+            trend,
+            enforce_stationarity,
+            enforce_invertibility,
+        )
         preds.append(pred)
         lower_bounds.append(lower)
         upper_bounds.append(upper)
@@ -226,19 +289,37 @@ def _run_sarima(train_df, test_df, config):
         actual_val = test_df.iloc[i]["energy_demand"]
         _train_y = pd.concat([_train_y, pd.Series([actual_val])], ignore_index=True)
 
-    return np.array(preds), pd.DataFrame({"lower": np.array(lower_bounds), "upper": np.array(upper_bounds)}, index=test_df.index), fitted, order, seasonal_order
+    return (
+        np.array(preds),
+        pd.DataFrame(
+            {"lower": np.array(lower_bounds), "upper": np.array(upper_bounds)},
+            index=test_df.index,
+        ),
+        fitted,
+        order,
+        seasonal_order,
+    )
 
 
 def _run_sarimax(train_df, test_df, config):
-    train_encoded, test_encoded = encode_features(train_df, test_df, resolution=config["data"]["resolution"])
+    train_encoded, test_encoded = encode_features(
+        train_df, test_df, resolution=config["data"]["resolution"]
+    )
     exog_train = train_encoded.drop(columns=["energy_demand"])
     exog_test = test_encoded.drop(columns=["energy_demand"])
 
-    search_space = config["model"].get("search_space", {"p": [0, 1, 2, 3], "q": [0, 1, 2, 3]})
+    search_space = config["model"].get(
+        "search_space", {"p": [0, 1, 2, 3], "q": [0, 1, 2, 3]}
+    )
     seasonal_period = config["model"].get("seasonal_period", 7)
     seasonal_orders_cfg = config["model"].get(
         "seasonal_orders",
-        [(0, 1, 0, seasonal_period), (1, 1, 0, seasonal_period), (0, 1, 1, seasonal_period), (1, 1, 1, seasonal_period)],
+        [
+            (0, 1, 0, seasonal_period),
+            (1, 1, 0, seasonal_period),
+            (0, 1, 1, seasonal_period),
+            (1, 1, 1, seasonal_period),
+        ],
     )
     trend = config["model"].get("trend", "c")
     enforce_stationarity = config["model"].get("enforce_stationarity", False)
@@ -272,8 +353,17 @@ def _run_sarimax(train_df, test_df, config):
     fitted = None
 
     for i in range(len(test_df)):
-        exog_test_row = exog_test.iloc[i:i+1]
-        pred, lower, upper, fitted = _forecast_sarimax_onestep(_train_y, _exog_train, exog_test_row, order, seasonal_order, trend, enforce_stationarity, enforce_invertibility)
+        exog_test_row = exog_test.iloc[i : i + 1]
+        pred, lower, upper, fitted = _forecast_sarimax_onestep(
+            _train_y,
+            _exog_train,
+            exog_test_row,
+            order,
+            seasonal_order,
+            trend,
+            enforce_stationarity,
+            enforce_invertibility,
+        )
         preds.append(pred)
         lower_bounds.append(lower)
         upper_bounds.append(upper)
@@ -282,7 +372,16 @@ def _run_sarimax(train_df, test_df, config):
         _train_y = pd.concat([_train_y, pd.Series([actual_val])], ignore_index=True)
         _exog_train = pd.concat([_exog_train, exog_test_row], ignore_index=True)
 
-    return np.array(preds), pd.DataFrame({"lower": np.array(lower_bounds), "upper": np.array(upper_bounds)}, index=test_df.index), fitted, order, seasonal_order
+    return (
+        np.array(preds),
+        pd.DataFrame(
+            {"lower": np.array(lower_bounds), "upper": np.array(upper_bounds)},
+            index=test_df.index,
+        ),
+        fitted,
+        order,
+        seasonal_order,
+    )
 
 
 def _log_results(run, test_df, predictions):
@@ -307,7 +406,10 @@ def _log_results(run, test_df, predictions):
         {
             "actual_vs_predicted": wandb.plot.line_series(
                 xs=list(range(len(df_preds))),
-                ys=[df_preds["actual_kWh"].tolist(), df_preds["predicted_kWh"].tolist()],
+                ys=[
+                    df_preds["actual_kWh"].tolist(),
+                    df_preds["predicted_kWh"].tolist(),
+                ],
                 keys=["actual", "predicted"],
                 title="Actual vs Predicted (kWh)",
                 xname="time_step",
@@ -330,17 +432,25 @@ def run_experiment(CONFIG):
         raise ValueError(f"Unknown model type: {CONFIG['model']['type']}")
 
     if model_type == "decompose_arima":
-        predictions, conf_int, fitted, order = _run_decompose_arima(train_data, test_data, CONFIG)
+        predictions, conf_int, fitted, order = _run_decompose_arima(
+            train_data, test_data, CONFIG
+        )
         seasonal_order = None
         seasonal_period = CONFIG["model"].get("seasonal_period", 7)
     elif model_type == "sarima":
-        predictions, conf_int, fitted, order, seasonal_order = _run_sarima(train_data, test_data, CONFIG)
+        predictions, conf_int, fitted, order, seasonal_order = _run_sarima(
+            train_data, test_data, CONFIG
+        )
         seasonal_period = CONFIG["model"].get("seasonal_period", 7)
     else:
-        predictions, conf_int, fitted, order, seasonal_order = _run_sarimax(train_data, test_data, CONFIG)
+        predictions, conf_int, fitted, order, seasonal_order = _run_sarimax(
+            train_data, test_data, CONFIG
+        )
         seasonal_period = CONFIG["model"].get("seasonal_period", 7)
 
-    run_name = CONFIG["wandb"].get("run_name") or generate_run_name(model_type, order, seasonal_order, seasonal_period)
+    run_name = CONFIG["wandb"].get("run_name") or generate_run_name(
+        model_type, order, seasonal_order, seasonal_period
+    )
 
     print("~~~~~~~~~~ Launching training ~~~~~~~~~~~~")
     print(f"Run name: {run_name}")

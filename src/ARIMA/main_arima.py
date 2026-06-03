@@ -1,6 +1,5 @@
 from direct import run_experiment
 
-
 CONFIG = {
     "data": {
         "train_path": "data/processed/residential4_energy_demand_daily_train.csv",
