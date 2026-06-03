@@ -37,8 +37,12 @@ def encode_features(train_df, test_df, resolution="daily"):
 
     encoded_cols = encoder.get_feature_names_out(cat_cols)
 
-    train_cat_df = pd.DataFrame(train_cat_encoded, columns=encoded_cols, index=train_df.index)
-    test_cat_df = pd.DataFrame(test_cat_encoded, columns=encoded_cols, index=test_df.index)
+    train_cat_df = pd.DataFrame(
+        train_cat_encoded, columns=encoded_cols, index=train_df.index
+    )
+    test_cat_df = pd.DataFrame(
+        test_cat_encoded, columns=encoded_cols, index=test_df.index
+    )
 
     train_final = pd.concat([train_target, train_cat_df], axis=1)
     test_final = pd.concat([test_target, test_cat_df], axis=1)
@@ -48,7 +52,9 @@ def encode_features(train_df, test_df, resolution="daily"):
 
 def seasonal_decompose_target(train_df, period, model="additive"):
     target = train_df["energy_demand"].astype(float)
-    decomposition = seasonal_decompose(target, model=model, period=period, extrapolate_trend="freq")
+    decomposition = seasonal_decompose(
+        target, model=model, period=period, extrapolate_trend="freq"
+    )
 
     seasonal = decomposition.seasonal.fillna(0.0)
     deseasonalized = target - seasonal

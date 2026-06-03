@@ -9,7 +9,7 @@ run = wandb.init(
     # Set the wandb project where this run will be logged.
     project="test_project",
     # Track hyperparameters and run metadata.
-    name = "my_test_run",
+    name="my_test_run",
     config={
         "learning_rate": 0.02,
         "architecture": "CNN",
