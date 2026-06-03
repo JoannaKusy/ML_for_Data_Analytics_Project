@@ -187,9 +187,9 @@ def test_run_data_pipeline(monkeypatch, tmp_path):
         assert feat in hourly_all.columns, f"Hourly data is missing feature: {feat}"
 
     # New Year's Day (Jan 1, 2017) is correctly flagged as a holiday/weekend
-    assert (
-        daily_all.loc["2017-01-01", "is_holiday_or_weekend"]
-    ), "Holiday flag failed for Jan 1st"
+    assert daily_all.loc[
+        "2017-01-01", "is_holiday_or_weekend"
+    ], "Holiday flag failed for Jan 1st"
 
     # ('winter' for Dec/Jan)
     assert (
