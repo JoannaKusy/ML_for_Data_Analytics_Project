@@ -5,7 +5,6 @@ import optuna
 from network_variants import keras_LSTM_encoder_decoder
 from keras_direct import run_experiment as run_experiment_keras
 
-
 BASE_CONFIG = {
     "seed": 42,
     "data": {
