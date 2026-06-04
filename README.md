@@ -9,7 +9,25 @@ pip install -r requirements.txt
 
 ---
 
-# Detailed intructions
+# Quality Assurance and Pipeline instructions
+
+We implement quality assurance for code formatting and code practices according to python standards with black and ruff for folders src/ tests/ notebooks/. 
+It's recommended to run 
+
+```
+black src/ tests/ notebooks/
+ruff check src/ tests/ notebooks/
+```
+locally before pushing code to repo. 
+
+- black: if you run it without --check flag (`black src/ tests/ notebooks/`) it will automatically fix formatting in the files. With --check (`black src/ tests/ notebooks/ --check`)  it only checks if reformatting is needed (this is part of pipeline now - it checks if you used it locally to reformat everything)
+- ruff : you can add --fix flag (`ruff check src/ tests/ notebooks/ --fix`) and it will fix safe errors - for the rest simply read the error message and fix accordingly. **Important**: don't use star imports (from ... import *) as it's not considered good practice and will be always flagged by ruff. In special, justified cases you can add `# noqa` at the end of line to be ignored by ruff but use it only if necessary.
+- 
+You can check what happens in CI pipeline in detail in .github/workflows/ci.yml file.
+
+After you create a Pull Request you can check if the pipeline is passed (check closed PRs for examples) and see details in Actions tab of repository. If it failed simply fix flagged errors and push again to the same branch as in Pull Request - it will automatically trigger the pipeline again. Until the pipeline is passed you cannot merge with main.
+
+#  wandb intructions
 
 ---
 

@@ -1,6 +1,5 @@
 # Data (often too large for GitHub)
-data/raw/
-data/processed/
+data/
 
 # Model artifacts (can be large)
 *.pkl
@@ -223,4 +222,4 @@ pres.txt
 
 #wandb
 wandb/
-notebooks/data/*
+artifacts/

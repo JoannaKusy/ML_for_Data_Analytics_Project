@@ -86,7 +86,9 @@ def build_encoder_decoder_config(params, trial_name):
 
 def sample_params(trial, search_space):
     return {
-        "learning_rate": trial.suggest_float("learning_rate", **search_space["learning_rate"]),
+        "learning_rate": trial.suggest_float(
+            "learning_rate", **search_space["learning_rate"]
+        ),
         "dropout": trial.suggest_float("dropout", **search_space["dropout"]),
         "hidden_size": trial.suggest_int("hidden_size", **search_space["hidden_size"]),
         "batch_size": trial.suggest_int("batch_size", **search_space["batch_size"]),
@@ -129,7 +131,9 @@ def run_optuna_search(optuna_cfg):
     if best_metrics:
         print(f"  best_val_rmse: {best_metrics.get('best_val_rmse')}")
         print(f"  test_mae: {best_metrics.get('test_mae')}")
-        print(f"  split(train/val): {best_metrics.get('train_size')}/{best_metrics.get('val_size')}")
+        print(
+            f"  split(train/val): {best_metrics.get('train_size')}/{best_metrics.get('val_size')}"
+        )
 
     final_config = build_encoder_decoder_config(best_params, trial_name="best")
     final_config["wandb"]["enabled"] = True
