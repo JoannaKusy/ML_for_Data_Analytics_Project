@@ -222,4 +222,10 @@ pres.txt
 
 #wandb
 wandb/
-artifacts/
+
+notebooks/data/*
+
+artifacts/*
+
+#tft
+lightning_logs/
