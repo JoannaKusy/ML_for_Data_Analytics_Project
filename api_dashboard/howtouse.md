@@ -12,6 +12,10 @@ We use the trained model logged into W&B Artifacts:
 * During training, the exact `MinMaxScaler` object and PyTorch weights (`model.pth`) are versioned and logged to W&B.
 * In production, the backend and frontend download and initialize these exact artifacts. This ensures that the incoming production data is scaled using the exact  parameters the model learned during training.
 
+### Basic Monitoring Strategy
+To ensure the model does not silently degrade in production, the Streamlit dashboard includes a **Model Monitoring**. 
+* The UI calculates the **Mean Absolute Error (MAE)** over a sliding 20-step window.
+* If the MAE crosses a predefined threshold, it triggers a visual **Data Drift Warning**, alerting the user that the incoming data distribution may have shifted away from the training data.
 ---
 
 ## Execution Instructions
@@ -55,4 +59,12 @@ Click the "Start Stream" button on the left sidebar.
 Observe the terminal running FastAPI to see the live HTTP POST 200 requests being processed in real-time as the dashboard animations update.
 The dashboard updates every 10s for the next day of data.
 Dashboard should look like this:
-![alt text](image.png)
+![](image.png)
+![alt text](image-2.png)
+
+And your terminals like this
+- Terminal 1
+![alt text](image-4.png)
+
+- Terminal 2
+![alt text](image-3.png)

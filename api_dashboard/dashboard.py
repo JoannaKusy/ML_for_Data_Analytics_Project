@@ -44,9 +44,8 @@ st.markdown(
 
 # --- UI PLACEHOLDERS & LAYOUT ---
 left_col, right_col = st.columns([1, 4])
-
 with left_col:
-    st.markdown("### Live Energy Demand ")
+    st.markdown("### Live Energy Demand")
     time_placeholder = st.empty()
     st.markdown("---")
     
@@ -58,11 +57,13 @@ with left_col:
     pred_metric = st.empty()
     st.markdown("---")
     
-    latency_metric = st.empty()
+    # NEW: Monitoring Section
+    with st.expander("Model Monitoring", expanded=True):
+        mae_metric = st.empty()
+        status_metric = st.empty()
     
     st.markdown("<br>", unsafe_allow_html=True)
     start_stream = st.button("▶ Start Stream", type="primary", use_container_width=True)
-
 with right_col:
     line_chart_placeholder = st.empty()
     flow_placeholder = st.empty()
@@ -204,7 +205,18 @@ if start_stream:
 
         actual_metric.metric("Actual", f"{actual_total:.1f} kW")
         pred_metric.metric("Predicted", f"{prediction:.1f} kW", delta=f"{prediction - actual_total:.1f}", delta_color="inverse")
-        latency_metric.metric("API latency", f"{latency} ms")
+        
+        # NEW: Calculate Rolling MAE for basic Monitoring
+        import numpy as np
+        if len(history_actual) > 0:
+            rolling_mae = np.mean(np.abs(np.array(history_actual) - np.array(history_pred)))
+            mae_metric.metric("Rolling Error (MAE)", f"{rolling_mae:.2f} kW")
+            
+            # Simple Drift Alert Threshold
+            if rolling_mae > 15.0: # Adjust this threshold based on your normal error
+                status_metric.error("HIGH ERROR: Possible Data Drift!")
+            else:
+                status_metric.success("Model Health: Stable")
         
         df_chart = pd.DataFrame({"Actual": history_actual, "Predicted": history_pred})
         
@@ -213,7 +225,7 @@ if start_stream:
         with flow_placeholder:
             st_echarts(
                 options=render_echarts_flow(actual_total, heat_pump, wash, other), 
-                height="400px", key=f"flow_{index}" 
+                height="350px", key=f"flow_{index}" 
             )
         
-        time.sleep(10)
+        time.sleep(4)
