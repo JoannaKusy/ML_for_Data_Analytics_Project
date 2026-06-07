@@ -226,6 +226,27 @@ def run_experiment(CONFIG):
             }
         )
 
+        # for shap analysis
+        # save the model weights
+        model_path = "lstm_enc_dec.keras"
+        model.save(model_path)
+
+        artifact = wandb.Artifact(
+            name=f"trained_model_{run_name}",
+            type="model",
+            description="Final model weights and scaler for SHAP analysis",
+        )
+
+        artifact.add_file(model_path)
+
+        import joblib
+
+        scaler_path = "scaler.joblib"
+        joblib.dump(scaler, scaler_path)
+        artifact.add_file(scaler_path)
+
+        run.log_artifact(artifact)
+
         run.finish()
 
     best_val_loss = float(np.min(history.history["val_loss"]))

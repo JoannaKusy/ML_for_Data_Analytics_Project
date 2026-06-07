@@ -1,11 +1,12 @@
 import pandas as pd
-import numpy as np
 from pytorch_forecasting import TemporalFusionTransformer, TimeSeriesDataSet
 from pytorch_forecasting.data import EncoderNormalizer
 from pytorch_forecasting.metrics import QuantileLoss
 import lightning.pytorch as pl
 from preprocess import load_data, preprocess_data
 import wandb
+import torch
+import joblib
 
 
 def run_experiment(config):
@@ -29,28 +30,36 @@ def run_experiment(config):
         max_prediction_length=max_prediction_length,
         time_varying_unknown_reals=[
             "energy_demand",
-            "dishwasher", 
-            "ev", 
-            "freezer", 
-            "grid_export", 
-            "heat_pump", 
-            "washing_machine", 
-            "temperature", 
-            "radiation_direct_horizontal", 
-            "radiation_diffuse_horizontal"
+            "dishwasher",
+            "ev",
+            "freezer",
+            "grid_export",
+            "heat_pump",
+            "washing_machine",
+            "temperature",
+            "radiation_direct_horizontal",
+            "radiation_diffuse_horizontal",
         ],
         time_varying_known_categoricals=["season", "is_holiday_or_weekend"],
-        target_normalizer = EncoderNormalizer(method="robust", center=True)
+        target_normalizer=EncoderNormalizer(method="robust", center=True),
     )
 
     validation = TimeSeriesDataSet.from_dataset(
-        training, cnct, predict=False, min_prediction_idx = test.at[0, "day"], stop_randomization=True
+        training,
+        cnct,
+        predict=False,
+        min_prediction_idx=test.at[0, "day"],
+        stop_randomization=True,
     )
 
     # Create dataloaders
     batch_size = config["training"]["batch_size"]
-    train_dataloader = training.to_dataloader(train=True, batch_size=batch_size, num_workers=0)
-    val_dataloader = validation.to_dataloader(train=False, batch_size=batch_size, num_workers=0)
+    train_dataloader = training.to_dataloader(
+        train=True, batch_size=batch_size, num_workers=0
+    )
+    val_dataloader = validation.to_dataloader(
+        train=False, batch_size=batch_size, num_workers=0
+    )
 
     # Define TFT model
     tft = TemporalFusionTransformer.from_dataset(
@@ -59,7 +68,9 @@ def run_experiment(config):
         hidden_size=config["model"]["network_params"]["hidden_size"],
         attention_head_size=config["model"]["network_params"]["attention_head_size"],
         dropout=config["model"]["network_params"]["dropout"],
-        hidden_continuous_size=config["model"]["network_params"]["hidden_continuous_size"],
+        hidden_continuous_size=config["model"]["network_params"][
+            "hidden_continuous_size"
+        ],
         # output_size=7,  # quantiles: [0.1, 0.5, 0.9]
         loss=QuantileLoss(),
     )
@@ -70,24 +81,19 @@ def run_experiment(config):
         entity=config["wandb"]["entity"],
         project=config["wandb"]["project"],
         name=config["wandb"]["run_name"],
-        config=config
+        config=config,
     )
 
     # Train the model
     trainer = pl.Trainer(
         max_epochs=config["training"]["epochs"],
-        gradient_clip_val = 0.01, 
-        accelerator       = "mps", 
-        log_every_n_steps = 5,
-        enable_progress_bar = True,
-        logger            = logger,
-        enable_checkpointing = False,
-        callbacks=[
-            pl.callbacks.EarlyStopping(
-                monitor='val_loss',
-                patience=5
-            )
-        ],
+        gradient_clip_val=0.01,
+        accelerator="mps",
+        log_every_n_steps=3,
+        enable_progress_bar=True,
+        logger=logger,
+        enable_checkpointing=False,
+        callbacks=[pl.callbacks.EarlyStopping(monitor="val_loss", patience=5)],
     )
 
     trainer.fit(tft, train_dataloader, val_dataloader)
@@ -130,4 +136,22 @@ def run_experiment(config):
         }
     )
 
+    run_name = config["wandb"]["run_name"]
+    model_path = "TFT.pth"
+    torch.save(tft.state_dict(), model_path)
+
+    artifact = wandb.Artifact(
+        name=f"trained_model_{run_name}",
+        type="model",
+        description="Final model weights and scaler for SHAP analysis",
+    )
+
+    artifact.add_file(model_path)
+
+    scaler_path = "scaler.joblib"
+    joblib.dump(training.target_normalizer, scaler_path)
+    artifact.add_file(scaler_path)
+
+    logger.experiment.log_artifact(artifact)
     logger.experiment.finish()
+    wandb.finish()

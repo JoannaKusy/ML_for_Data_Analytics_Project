@@ -1,6 +1,5 @@
 from direct import run_experiment
 
-
 CONFIG = {
     "seed": 42,
     "data": {
@@ -17,14 +16,14 @@ CONFIG = {
         },
     },
     "training": {
-        "epochs": 100,
+        "epochs": 80,
         "lr": 0.0001,
         "batch_size": 8,
     },
     "wandb": {
         "entity": "ml-for-data-analytics-project",
         "project": "energy-forecasting",
-        "run_name": "TFT"
+        "run_name": "TFT",
     },
 }
 
