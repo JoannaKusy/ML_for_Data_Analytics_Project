@@ -20,27 +20,27 @@ BASE_CONFIG = {
         "network_params": {
             "encoder_units": 128,
             "decoder_units": 128,
-            "dense_units": 128,
-            "dropout": 0.2,
+            "dense_units": 64,
+            "dropout": 0.1,
             "kernel_regularizer": {"l1": 0.01, "l2": 0.1},
         },
     },
     "training": {
-        "epochs": 200,
-        "lr": 0.0006,
-        "batch_size": 8,
+        "epochs": 130,
+        "lr": 0.00071,
+        "batch_size": 7,
     },
     "wandb": {
         "entity": "ml-for-data-analytics-project",
         "project": "energy-forecasting",
         "run_name": "encdec_lstm_base",
-        "enabled": False,
+        "enabled": True,
     },
 }
 
 
 OPTUNA_SEARCH = {
-    "enabled": True,
+    "enabled": False,
     "n_trials": 30,
     "seed": 42,
     "objective_metric": "best_val_rmse",
