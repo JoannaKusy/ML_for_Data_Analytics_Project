@@ -182,9 +182,14 @@ def run_data_pipeline(raw_data_dir, output_data_dir):
     df_hourly_clean, df_daily_clean = clean_raw_data(raw_data_dir)
 
     print("Running Feature Engineering...")
-    hourly_all, hourly_train, hourly_test, daily_all, daily_train, daily_test = (
-        engineer_features(df_hourly_clean, df_daily_clean)
-    )
+    (
+        hourly_all,
+        hourly_train,
+        hourly_test,
+        daily_all,
+        daily_train,
+        daily_test,
+    ) = engineer_features(df_hourly_clean, df_daily_clean)
 
     print(f"Saving output to {output_data_dir}...")
     os.makedirs(output_data_dir, exist_ok=True)
@@ -356,16 +361,77 @@ def create_sequences(train, test, k, resolution="daily"):
     )
 
 
+def create_sequences_w_val(train, val, test, k, resolution="daily"):
+    features = {
+        "daily": [
+            "is_holiday_or_weekend_True",
+            "season_spring",
+            "season_summer",
+            "season_winter",
+        ],
+        "hourly": ["daylight_flag", "time_of_day", "is_holiday_or_weekend", "season"],
+    }
+
+    FUTURE_FEATURES = features[resolution]  # known at prediction time
+
+    ALL_FEATURES = [
+        "energy_demand",
+        "dishwasher",
+        "ev",
+        "freezer",
+        "grid_export",
+        "heat_pump",
+        "pv",
+        "washing_machine",
+        "temperature",
+        "radiation_direct_horizontal",
+        "radiation_diffuse_horizontal",
+    ] + FUTURE_FEATURES
+
+    TARGET = "energy_demand"
+
+    combined = pd.concat([train, val, test]).sort_index()
+
+    X_past, X_future, y = [], [], []
+
+    for i in range(len(combined) - k):
+        past = combined.iloc[i : i + k][ALL_FEATURES].values
+        future = combined.iloc[i + k : i + k + 1][FUTURE_FEATURES].values
+        target = combined.iloc[i + k][TARGET]
+
+        X_past.append(past)
+        X_future.append(future)
+        y.append(target)
+
+    train_end = len(train) - k
+    val_end = train_end + len(val)
+
+    X_past_train = X_past[:train_end]
+    X_future_train = X_future[:train_end]
+    y_train = y[:train_end]
+
+    X_past_val = X_past[train_end:val_end]
+    X_future_val = X_future[train_end:val_end]
+    y_val = y[train_end:val_end]
+
+    X_past_test = X_past[val_end:]
+    X_future_test = X_future[val_end:]
+    y_test = y[val_end:]
+
+    return (
+        np.array(X_past_train),
+        np.array(X_future_train),
+        np.array(y_train),
+        np.array(X_past_val),
+        np.array(X_future_val),
+        np.array(y_val),
+        np.array(X_past_test),
+        np.array(X_future_test),
+        np.array(y_test),
+    )
+
+
 def scale_data(train, test):
-    scaler = MinMaxScaler()
-
-    train_scaled = scaler.fit_transform(train)
-    test_scaled = scaler.transform(test)
-
-    return train_scaled, test_scaled, scaler
-
-
-def scale_data_new(train, test):
     scaler = MinMaxScaler()
 
     columns = train.columns
@@ -374,3 +440,23 @@ def scale_data_new(train, test):
     test[columns] = scaler.transform(test[columns])
 
     return train, test, scaler
+
+
+def scale_data_new(train, val, test):
+    scaler = MinMaxScaler()
+
+    columns = train.columns
+
+    train[columns] = scaler.fit_transform(train[columns])
+    val[columns] = scaler.transform(val[columns])
+    test[columns] = scaler.transform(test[columns])
+
+    return train, val, test, scaler
+
+
+def split_train(train_df, val_size=30):
+    train_df = train_df.sort_index()
+    val_df = train_df.iloc[-val_size:].copy()
+    train_df = train_df.iloc[:-val_size].copy()
+
+    return train_df, val_df

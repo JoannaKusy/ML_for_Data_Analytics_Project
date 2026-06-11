@@ -4,7 +4,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 import wandb
 import numpy as np
-from preprocess import load_data, encode_features, scale_data_new, create_sequences
+from preprocess import load_data, encode_features, scale_data, create_sequences
 from metrics import mse, rmse, mae
 import pandas as pd
 
@@ -23,13 +23,18 @@ def run_experiment(CONFIG):
     train_df, test_df = encode_features(
         train_df, test_df, resolution=CONFIG["data"]["resolution"]
     )
-    train_df, test_df, scaler = scale_data_new(train_df, test_df)
+    train_df, test_df, scaler = scale_data(train_df, test_df)
 
     lags = CONFIG["data"]["lags"]
-    X_past_train, X_future_train, y_train, X_past_test, X_future_test, y_test = (
-        create_sequences(
-            train_df, test_df, k=lags[-1], resolution=CONFIG["data"]["resolution"]
-        )
+    (
+        X_past_train,
+        X_future_train,
+        y_train,
+        X_past_test,
+        X_future_test,
+        y_test,
+    ) = create_sequences(
+        train_df, test_df, k=lags[-1], resolution=CONFIG["data"]["resolution"]
     )
 
     input_size = X_past_train.shape[1]
