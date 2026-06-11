@@ -20,7 +20,7 @@ pytest>=8.0.0
 pytest-cov>=5.0.0
 black==26.5.1
 ruff==0.15.15
-black[jupyter]==26.5.1
+black[jupyter>=24.0.0
 pytorch-forecasting==1.7.0
 shap==0.51.0
 fastapi==0.110.0
