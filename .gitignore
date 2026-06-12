@@ -226,7 +226,7 @@ wandb/
 
 notebooks/data/*
 notebooks/artifacts/*
-
+api_dashboard/artifacts
 #tft
 lightning_logs/
 

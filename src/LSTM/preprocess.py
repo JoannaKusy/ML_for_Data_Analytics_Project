@@ -214,7 +214,10 @@ def run_data_pipeline(raw_data_dir, output_data_dir):
         os.path.join(output_data_dir, "residential4_energy_demand_daily_test.csv")
     )
 
-    print("Data pipeline completed successfully!")
+    print(
+        "Data pipeline completed successfully!",
+        os.path.join(output_data_dir, "residential4_energy_demand_hourly.csv"),
+    )
 
     return hourly_all, daily_all
 
