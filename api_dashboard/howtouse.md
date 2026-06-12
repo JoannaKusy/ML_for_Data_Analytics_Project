@@ -5,7 +5,7 @@ This project features a decoupled MLOps architecture for real-time residential e
 ## System Architecture
 
 1. **The Backend (FastAPI):** Loads the trained PyTorch `.pth` weights and the `scaler.joblib` into memory upon startup. It listens for incoming HTTP POST requests containing scaled sequences of data, runs the forward pass, and returns the inverse-scaled predictions.
-2. **The Frontend (Streamlit):** It streams raw CSV test data, pushes it through the exact preprocessing pipeline used in training, and polls the FastAPI endpoint. It visualizes the results using dynamic line charts and a custom SCADA-style ECharts power-flow diagram.
+2. **The Frontend (Streamlit):** It streams raw CSV test data, pushes it through the exact preprocessing pipeline used in training, and polls the FastAPI endpoint. It visualizes the results using dynamic line charts and a custom power-flow diagram.
 
 ### Weights & Biases (W&B) Integration
 We use the trained model logged into W&B Artifacts:
@@ -59,12 +59,31 @@ Click the "Start Stream" button on the left sidebar.
 Observe the terminal running FastAPI to see the live HTTP POST 200 requests being processed in real-time as the dashboard animations update.
 The dashboard updates every 10s for the next day of data.
 Dashboard should look like this:
-![](image.png)
-![alt text](image-2.png)
 
-And your terminals like this
-- Terminal 1
-![alt text](image-4.png)
+## Run via Docker
 
-- Terminal 2
-![alt text](image-3.png)
+Docker guarantees the API runs in an isolated, pinned environment. From the root of the project:
+
+### Step 1: Build the Docker image
+docker build -t smart-grid-api .
+
+### Step 3: Run the container in the background (mapping port 8000)
+docker run -d --name energy-backend -p 8000:8000 smart-grid-api
+
+### Step 3: Verify it is running by checking the health endpoint
+curl http://localhost:8000/health
+
+### Step 2: Start the Live Dashboard
+
+The Streamlit frontend runs locally and communicates with the API over port 8000 (whether the API is local or in Docker).
+
+```bash 
+# Activate the virtual environment
+source venv/bin/activate
+
+# Navigate to the deployment directory
+cd api_dashboard
+
+# Launch the Streamlit User Interface
+streamlit run dashboard.py
+```
