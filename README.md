@@ -49,7 +49,7 @@ We conducted a comparison between classical time-series baselines and complex de
 
 ---
 
-## Model Interpretability (`notebooks/04_interpretability.ipynb`)
+## Model Interpretability (`notebooks/03_interpretability.ipynb`)
 To ensure the model is reliable for grid operators, we conducted a rigorous interpretability analysis. The analysis is lightweight for classical models and more detailed for the neural and hybrid models, where SHAP, attention, and counterfactual analysis are more informative.
 
 ---
@@ -65,9 +65,8 @@ ML_FOR_DATA_ANALYTICS_PROJECT/
 ├── notebooks/               
 │   ├── 01_eda.ipynb
 │   ├── 02_feature_engineering.ipynb
-│   ├── 03_modeling.ipynb
-│   ├── 04_interpretability.ipynb
-│   ├── 05_final_report.ipynb
+│   ├── 03_interpretability.ipynb
+│   ├── 04_final_report.ipynb
 │   └── wandb_grouping.ipynb
 ├── src/                     # Modularized source code
 │   ├── ARIMA/ ETS/ LSTM/ Prophet/ TFT/
