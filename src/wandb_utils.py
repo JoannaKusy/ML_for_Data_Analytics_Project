@@ -1,9 +1,9 @@
-import os
 import json
 import tempfile
 import numpy as np
 import pandas as pd
 import wandb
+
 
 def extract_table_path_from_summary(summary_value):
     """Parses W&B summary metrics to isolate the raw path to a .table.json log."""
@@ -12,6 +12,7 @@ def extract_table_path_from_summary(summary_value):
         if isinstance(path, str) and path.endswith(".table.json"):
             return path
     return None
+
 
 def download_predictions_table(run, key="predictions"):
     """Downloads a .table.json prediction artifact directly from a W&B run file structure."""
@@ -49,6 +50,7 @@ def download_predictions_table(run, key="predictions"):
             continue
     return None, None
 
+
 def calculate_table_metrics(df_pred, actual_col="actual_kWh", pred_col="predicted_kWh"):
     """Extracts numeric arrays, alignments, and calculates key forecast error indices."""
     actual_key = actual_col if actual_col in df_pred.columns else None
@@ -59,7 +61,7 @@ def calculate_table_metrics(df_pred, actual_col="actual_kWh", pred_col="predicte
 
     y_true = pd.to_numeric(df_pred[actual_key], errors="coerce")
     y_pred = pd.to_numeric(df_pred[pred_key], errors="coerce")
-    
+
     # Drop joint NaNs if they exist
     valid_mask = y_true.notna() & y_pred.notna()
     y_true = y_true[valid_mask]
@@ -70,14 +72,19 @@ def calculate_table_metrics(df_pred, actual_col="actual_kWh", pred_col="predicte
 
     mae = float(np.mean(np.abs(y_true - y_pred)))
     rmse = float(np.sqrt(np.mean((y_true - y_pred) ** 2)))
-    
+
     non_zero = y_true != 0
     mape = (
-        float(np.mean(np.abs((y_true[non_zero] - y_pred[non_zero]) / y_true[non_zero])) * 100)
-        if non_zero.any() else np.nan
+        float(
+            np.mean(np.abs((y_true[non_zero] - y_pred[non_zero]) / y_true[non_zero]))
+            * 100
+        )
+        if non_zero.any()
+        else np.nan
     )
-    
+
     return mae, rmse, mape
+
 
 def compile_benchmark_table(entity, project, run_ids, predictions_key="predictions"):
     """Iterates through specific run IDs to fetch tables and generate a sorted DataFrame."""
@@ -88,21 +95,23 @@ def compile_benchmark_table(entity, project, run_ids, predictions_key="predictio
         try:
             run = api.run(f"{entity}/{project}/{run_id}")
             df_pred, _ = download_predictions_table(run, key=predictions_key)
-            
+
             if df_pred is None or df_pred.empty:
                 print(f"Skipping {run_id}: No prediction table found.")
                 continue
 
             mae, rmse, mape = calculate_table_metrics(df_pred)
 
-            table_rows.append({
-                "Run Name": run.name,
-                "Run ID": run.id,
-                "State": run.state,
-                "MAE": mae,
-                "RMSE": rmse,
-                "MAPE (%)": mape
-            })
+            table_rows.append(
+                {
+                    "Run Name": run.name,
+                    "Run ID": run.id,
+                    "State": run.state,
+                    "MAE": mae,
+                    "RMSE": rmse,
+                    "MAPE (%)": mape,
+                }
+            )
             print(f"Successfully processed: {run.name}")
 
         except Exception as e:
@@ -111,5 +120,7 @@ def compile_benchmark_table(entity, project, run_ids, predictions_key="predictio
     if len(table_rows) > 0:
         final_df = pd.DataFrame(table_rows)
         return final_df.sort_values(by="MAE", ascending=True).reset_index(drop=True)
-    
-    return pd.DataFrame(columns=["Run Name", "Run ID", "State", "MAE", "RMSE", "MAPE (%)"])
+
+    return pd.DataFrame(
+        columns=["Run Name", "Run ID", "State", "MAE", "RMSE", "MAPE (%)"]
+    )
