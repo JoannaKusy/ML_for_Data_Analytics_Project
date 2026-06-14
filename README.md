@@ -21,15 +21,17 @@ The data pipeline is fully reproducible, taking raw multi-source data and transf
 * **Open Power System Data (OPSD)** the `Household Data`, `Time series` and `Weather Data` datasets from the [following link](https://open-power-system-data.org/?fbclid=IwY2xjawQrXChleHRuA2FlbQIxMABicmlkETAySk9Rek9iRlhadG5obFY2c3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHrxVocPQPnX3w-NtGDF0CzSaMXon2ozmHkI4GrpsZ26X0-5tdyYfNkCLztn8_aem_VLIgUHUoLSYcNf8ToLLKHw).
 
 
-**2. Exploratory Data Analysis & Cleaning (`notebooks/01_eda.ipynb` & `src/data_pipeline.py`)**
+**2. Exploratory Data Analysis & Cleaning (`notebooks/01_eda.ipynb` )**
 * Validates time-series continuity, handles missing value imputation and standardizes UTC timestamps. Outputs are saved to `data/cleaned/`.
 
-**3. Advanced Feature Engineering (`notebooks/02_feature_engineering.ipynb` & `src/features.py`)**
+**3. Advanced Feature Engineering (`notebooks/02_feature_engineering.ipynb`)**
 * **Target Variable:** Energy Demand (Grid Import) in kWh.
 * **Appliance-Level Regressors:** Heat Pump, Washing Machine, Dishwasher, EV, Photovoltaic (PV).
 * **Weather & Solar Regressors:** Temperature, Radiation (Direct & Diffuse Horizontal). We utilize the `astral` library to calculate exact dawn/dusk times for solar impact analysis.
 * **Temporal Regressors:** Incorporates the `holidays` library for regional holiday flags, alongside weekends, seasons, and cyclical time-of-day encodings.
 * The final scaled and sequence-encoded data is exported to `data/processed/` for model training.
+
+**Complete data pipeline based on these notebooks in modularized as `run_data_pipeline` in `src\LSTM\preprocess.py` performing Preprocessing -> Feature Engineering -> Saving Data**
 
 ---
 
@@ -55,7 +57,7 @@ To ensure the model is reliable for grid operators, we conducted a rigorous inte
 ---
 
 ## Repository Structure
-The codebase follows strict software engineering practices, separating research notebooks from the production source code.
+The codebase follows strict software engineering practices, separating research notebooks from the production source code. Simplified repository structure:
 
 ```text
 ML_FOR_DATA_ANALYTICS_PROJECT/
@@ -70,10 +72,11 @@ ML_FOR_DATA_ANALYTICS_PROJECT/
 │   └── wandb_grouping.ipynb
 ├── src/                     # Modularized source code
 │   ├── ARIMA/ ETS/ LSTM/ Prophet/ TFT/
+|    ├── data_loader.py
 │   ├── data_pipeline.py
-│   ├── features.py
 │   ├── metrics.py
-│   └── wandb_setup.py
+│   ├── wandb_setup.py
+|   └── wandb_utils.py
 ├── tests/                   # Unit tests (pytest)
 ├── .github/workflows/       # CI/CD Pipeline definitions (ci.yml)
 ├── pyproject.toml           # Environment & formatting rules
@@ -162,7 +165,7 @@ View results: https://wandb.ai/ml-for-data-analytics-project/energy-forecasting
 ```text
 src/LSTM/
 │
-├── preprocess.py        # data loading, encoding, lag features
+├── preprocess.py        # data loading, encoding, lag features, full data pipeline
 ├── network_variant.py   # model definitions
 ├── direct.py            # training loop + wandb logging
 ├── main_lstm.py         # config + run script
