@@ -244,7 +244,7 @@ if start_stream:
             mae_metric.metric("Rolling Error (MAE)", f"{rolling_mae:.2f} kW")
 
             # Simple Drift Alert Threshold
-            if rolling_mae > 15.0:  # Adjust this threshold based on your normal error
+            if rolling_mae > 6.0:
                 status_metric.error("HIGH ERROR: Possible Data Drift!")
             else:
                 status_metric.success("Model Health: Stable")
